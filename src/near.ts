@@ -15,17 +15,19 @@ const config = {
   nodeUrl: "https://rpc.mainnet.near.org",
 };
 
-export async function getTransactions(startBlock, endBlock, accountId) {
+export async function getTokenReceiver(startBlock, endBlock, accountId) {
   const near = await connect(config);
 
   // creates an array of block hashes for given range
   const blockArr = [];
   let blockHash = endBlock;
+  let counter = 0;
   do {
     const currentBlock = await getBlockByID(blockHash);
     blockArr.push(currentBlock.header.hash);
     blockHash = currentBlock.header.prev_hash;
-    console.log("Reading block", blockHash);
+    console.log("Reading block", counter, blockHash);
+    counter++;
   } while (blockHash !== startBlock);
 
   // returns block details based on hashes in array
@@ -53,18 +55,28 @@ export async function getTransactions(startBlock, endBlock, accountId) {
   // checks chunk details for transactions
   // if there are transactions in the chunk we
   // find ones associated with passed accountId
-  const transactions = chunkDetails.flatMap((chunk) =>
-    (chunk.transactions || []).filter((tx) => tx.receiver_id === accountId)
+  const tokenTransfers = chunkDetails.flatMap((chunk) =>
+    (chunk.transactions || []).filter((tx) => 
+        tx.receiver_id === accountId &&
+        tx.actions[0].FunctionCall.method_name === 'ft_transfer')
   );
+  
+  let activeAccounts = new Map()
+  tokenTransfers.forEach(tx => {
+    const args = decodeFunctionArguments(tx.actions[0].FunctionCall.args)
+    activeAccounts.set(args.receiver_id, true)
+  });
 
   //creates transaction links from matchingTxs
-  const txsLinks = transactions.map((txs) => ({
-    method: txs.actions[0].FunctionCall.method_name,
-    arguments: decodeFunctionArguments(txs.actions[0].FunctionCall.args),
-    link: `https://explorer.near.org/transactions/${txs.hash}`,
+  const txsLinks = tokenTransfers.map((tx) => ({
+    method: tx.actions[0].FunctionCall.method_name,
+    arguments: decodeFunctionArguments(tx.actions[0].FunctionCall.args),
+    link: `https://explorer.near.org/transactions/${tx.hash}`,
   }));
-  console.log("MATCHING TRANSACTIONS: ", transactions);
-  console.log("TRANSACTION LINKS: ", txsLinks);
+  console.log("Matching transactions:", tokenTransfers);
+  console.log("Transaction links:", txsLinks);
+  
+  return Array.from(activeAccounts.keys())
 }
 
 async function getBlockByID(blockID) {

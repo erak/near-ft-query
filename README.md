@@ -28,28 +28,43 @@ USAGE
 <!-- usagestop -->
 # Commands
 <!-- commands -->
-* [`near-ft-query hello [FILE]`](#near-ft-query-hello-file)
+* [`near-ft-query init [ACCOUNTS]`](#near-ft-query-init-file)
+* [`near-ft-query update`](#near-ft-query-update-file)
 * [`near-ft-query help [COMMAND]`](#near-ft-query-help-command)
 
-## `near-ft-query hello [FILE]`
+## `near-ft-query init [ACCOUNTS]`
 
-describe the command here
+Initializes file cache. An optional account list can be passed.
 
 ```
 USAGE
-  $ near-ft-query hello [FILE]
+  $ near-ft-query init [ACCOUNTS]
 
 OPTIONS
   -f, --force
   -h, --help       show CLI help
-  -n, --name=name  name to print
 
 EXAMPLE
-  $ near-ft-query hello
-  hello world from ./src/hello.ts!
+  $ near-ft-query init account1.near,account2.near
 ```
 
-_See code: [src/commands/hello.ts](https://github.com/erak/near-ft-query/blob/v0.0.1/src/commands/hello.ts)_
+_See code: [src/commands/init.ts](https://github.com/erak/near-ft-query/blob/v0.0.1/src/commands/init.ts)_
+
+## `near-ft-query update`
+
+Queries token transfers, balances and updates file cache.
+
+```
+USAGE
+  $ near-ft-query update
+
+OPTIONS
+  -f, --force
+  -h, --help       show CLI help
+
+EXAMPLE
+  $ near-ft-query update
+```
 
 ## `near-ft-query help [COMMAND]`
 

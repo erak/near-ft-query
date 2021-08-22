@@ -1,54 +1,68 @@
-import {Command, flags} from '@oclif/command'
-import { getTransactions } from '../near'
+import { Command, flags } from '@oclif/command'
+import { writeFile, existsSync } from 'fs'
+// import { exists } from 'path'; 
 
-const filename = "token_data.json"
+const filename = "hype-tkn-near-active-accounts.json"
 
-// block hash of query start (oldest block)
 let cache = {
   created: new Date(),
   updated: new Date(),
   contract: 'hype.tkn.near',
-  blockhash: '83vrZzXWPYc14a7ZzdywfW9HevNy1TWTT1hxKLu2rDZU', // #45791790
-  balances: []
+  // First transaction on hype.tkn.near
+  // blockhash: 'BuDrmBTYbzqCDq59B4kdme4YzdYMVfJskCNnookFaq6A',
+  // Block created: August 21, 2021 at 2:55:43pm
+  blockhash: 'AdLkmrttoBqYsbk386UdsDSqbFMKu3hcoAXp8DPSpu9D',
+  accounts: []
 }
 
 export default class Init extends Command {
-  static description = 'describe the command here'
+  static description = 'Initializes file cache. An optional account list can be passed.'
 
   static examples = [
-    `$ near-ft-query init
-hello world from ./src/hello.ts!
-`,
+    `$ near-ft-query init -`,
   ]
 
   static flags = {
     help: flags.help({char: 'h'}),
-    // flag with a value (-n, --name=VALUE)
-    name: flags.string({char: 'n', description: 'name to print'}),
     // flag with no value (-f, --force)
     force: flags.boolean({char: 'f'}),
   }
 
-  static args = [{name: 'file'}]
+  static args = [{name: 'accounts', description: 'List of accounts to initialize cache with.'}]
 
   async run() {
     const {args, flags} = this.parse(Init)
 
     this.log('Initializing cache file', filename, '...')
 
-    let out = JSON.stringify(cache)
-    this.log(JSON.parse(out))
+    if (!args.accounts) {
+      this.log('No account list provided. Defaulting to empty list.')
+    } else {
+      cache.accounts = args.accounts.split(',')
+    }
 
-    // Block hash of query end (newest block). Not included in the query.
-    const last_blockhash = "GDsnR2qc6geFWf3Ktmofa6LiX2gGPxBweXUfqFVkXeSv" // #45791792
+    let content = JSON.stringify(cache)
+    this.log(JSON.parse(content))
 
-    // FIND Blocks #45791791
-    getTransactions(cache.blockhash, last_blockhash, cache.contract)
+    let updateFile = true
+    if (existsSync(filename)) {
+      this.log("Existing cache file found.")
+      if (args.force) {
+        this.log("Forcing overwrite...")
+      } else {
+        updateFile = false
+      }
+    }
 
-    // const name = flags.name ?? 'world'
-    // this.log(`hello ${name} from ./src/commands/hello.ts`)
-    // if (args.file && flags.force) {
-    //   this.log(`you input --force and --file: ${args.file}`)
-    // }
-  }
+    if (updateFile) {
+      writeFile(filename, content, function (err) {
+        if (err) throw err;
+        console.log('Cache file written.');
+      });
+    } else {
+      console.log('Skipping.');
+    }
+    
+    
+  } 
 }
