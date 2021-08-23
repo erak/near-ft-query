@@ -1,5 +1,5 @@
 import {Command, flags} from '@oclif/command'
-import { getTokenReceiver } from '../near'
+import { findTokenReceiver } from '../near'
 
 const filename = "hype-tkn-near-active-accounts.json"
 
@@ -33,7 +33,7 @@ export default class Test extends Command {
       balances: []
     }
     let last_blockhash = "GDsnR2qc6geFWf3Ktmofa6LiX2gGPxBweXUfqFVkXeSv" // #45791792
-    getTokenReceiver(cache.blockhash, last_blockhash, cache.contract)
+    findTokenReceiver(cache.blockhash, last_blockhash, cache.contract)
       .then(activeAccounts => {
         this.log("Active accounts:", activeAccounts)
       })

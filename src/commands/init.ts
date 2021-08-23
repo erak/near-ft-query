@@ -1,4 +1,5 @@
 import { Command, flags } from '@oclif/command'
+import { retrieveLatestBlockHash } from '../near'
 import { writeFile, existsSync } from 'fs'
 // import { exists } from 'path'; 
 
@@ -11,7 +12,7 @@ let cache = {
   // First transaction on hype.tkn.near
   // blockhash: 'BuDrmBTYbzqCDq59B4kdme4YzdYMVfJskCNnookFaq6A',
   // Block created: August 21, 2021 at 2:55:43pm
-  blockhash: 'AdLkmrttoBqYsbk386UdsDSqbFMKu3hcoAXp8DPSpu9D',
+  blockhash: '',
   accounts: []
 }
 
@@ -33,36 +34,40 @@ export default class Init extends Command {
   async run() {
     const {args, flags} = this.parse(Init)
 
-    this.log('Initializing cache file', filename, '...')
+    this.log('Retrieving latest blockhash and initializing cache file', filename, '...')
 
-    if (!args.accounts) {
-      this.log('No account list provided. Defaulting to empty list.')
-    } else {
-      cache.accounts = args.accounts.split(',')
-    }
+    retrieveLatestBlockHash().then((blockhash) => {
+      if (!args.accounts) {
+        this.log('No account list provided. Defaulting to empty list.')
+      } else {
+        cache.accounts = args.accounts.split(',')
+        cache.blockhash = blockhash
+      }
+  
+      let content = JSON.stringify(cache)
+      this.log(JSON.parse(content))
+  
+      if (this.shouldUpdate(filename, flags.force)) {
+        writeFile(filename, content, function (err) {
+          if (err) throw err;
+          console.log('Cache file written.');
+        });
+      } else {
+        console.log('Skipping.');
+      }
+    })    
+  }
 
-    let content = JSON.stringify(cache)
-    this.log(JSON.parse(content))
-
+  shouldUpdate(filename: string, force: boolean) {
     let updateFile = true
     if (existsSync(filename)) {
-      this.log("Existing cache file found.")
-      if (args.force) {
-        this.log("Forcing overwrite...")
+      this.log("Existing cache file found!")
+      if (force) {
+        this.log("Forcing overwrite.")
       } else {
         updateFile = false
       }
     }
-
-    if (updateFile) {
-      writeFile(filename, content, function (err) {
-        if (err) throw err;
-        console.log('Cache file written.');
-      });
-    } else {
-      console.log('Skipping.');
-    }
-    
-    
-  } 
+    return updateFile
+  }
 }

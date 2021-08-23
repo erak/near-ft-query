@@ -1,5 +1,5 @@
 import { Command, flags } from '@oclif/command'
-import { getTokenReceiver } from '../near'
+import { findTokenReceiver, retrieveLatestBlockHash } from '../near'
 import { readFile, writeFile, existsSync } from 'fs'
 
 const filename = "hype-tkn-near-active-accounts.json"
@@ -29,20 +29,24 @@ export default class Update extends Command {
 
       readFile(filename, function(err, data) {
         if (err) throw err;
-        let storedCache = JSON.parse(data)
+        let storedCache = JSON.parse(data.toString())
         
-        let lastBlockhash = 'G3CwQdvMXXFs3KSCeKZghkMuMu5V5DVBEVgxvg5eY4S6'
-        getTokenReceiver(storedCache.blockhash, lastBlockhash, storedCache.contract)
-          .then(activeAccounts => {
-            storedCache.accounts = [...new Set([...storedCache.accounts ,...activeAccounts])]
-            storedCache.updated = new Date()
-            console.log(storedCache)
+        retrieveLatestBlockHash().then((blockhash) => {
+          findTokenReceiver(storedCache.blockhash, blockhash, storedCache.contract)
+            .then(activeAccounts => {
+              storedCache.blockhash = blockhash
+              storedCache.accounts = [...new Set([...storedCache.accounts ,...activeAccounts])]
+              storedCache.updated = new Date()
+              console.log(storedCache)
 
-            writeFile(filename, JSON.stringify(storedCache), function (err) {
-              if (err) throw err;
-              console.log('Cache file written.');
-            });
-          })        
+              writeFile(filename, JSON.stringify(storedCache), function (err) {
+                if (err) throw err;
+                console.log('Cache file written.');
+              });
+            })     
+        })
+        
+   
       });
 
 

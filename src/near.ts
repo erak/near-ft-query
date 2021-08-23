@@ -1,5 +1,6 @@
 const { hexy } = require('hexy')
-const { connect, keyStores } = require("near-api-js")
+const nearAPI = require("near-api-js")
+
 const path = require("path")
 const homedir = require("os").homedir()
 
@@ -7,7 +8,7 @@ const CREDENTIALS_DIR = ".near-credentials";
 
 
 const credentialsPath = path.join(homedir, CREDENTIALS_DIR);
-const keyStore = new keyStores.UnencryptedFileSystemKeyStore(credentialsPath);
+const keyStore = new nearAPI.keyStores.UnencryptedFileSystemKeyStore(credentialsPath);
 
 const config = {
   keyStore,
@@ -15,8 +16,9 @@ const config = {
   nodeUrl: "https://rpc.mainnet.near.org",
 };
 
-export async function getTokenReceiver(startBlock, endBlock, accountId) {
-  const near = await connect(config);
+export async function findTokenReceiver(
+  startBlock: string, endBlock: string, accountId: string) {
+  const near = await nearAPI.connect(config);
 
   // creates an array of block hashes for given range
   const blockArr = [];
@@ -79,13 +81,22 @@ export async function getTokenReceiver(startBlock, endBlock, accountId) {
   return Array.from(activeAccounts.keys())
 }
 
+export async function retrieveLatestBlockHash() {
+  const near = await nearAPI.connect(config);
+  let status: NodeStatusResult = await near.connection.provider.status()
+  let syncInfo: SyncInfo = status.sync_info
+  return syncInfo.latest_block_hash
+}
+
 async function getBlockByID(blockID) {
-  const near = await connect(config);
+  const near = await nearAPI.connect(config);
   const blockInfoByHeight = await near.connection.provider.block({
     blockId: blockID,
   });
   return blockInfoByHeight;
 }
+
+
 
 const decodeFunctionArguments = (args: string) => {
     const decodedArgs = Buffer.from(args, "base64");
